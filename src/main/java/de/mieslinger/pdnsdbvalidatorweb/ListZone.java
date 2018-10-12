@@ -48,21 +48,35 @@ public class ListZone extends HttpServlet {
 
             response.setContentType("text/html;charset=UTF-8");
 
-            // FIXME: check that there is a domainId
-            Integer domainId = null;
+            // FIXME: fail gracefully without domainId
+            Long domainId = null;
             try {
-                domainId = Integer.parseInt(request.getParameter("domainid"));
+                domainId = Long.parseLong(request.getParameter("domainid"));
             } catch (Exception e) {
             }
 
             HikariDataSource ds = DataBase.getDs();
             Connection cn = ds.getConnection();
 
-            // TODO: delete row from domainmetadata
+            String action = request.getParameter("actionDeleteRecord");
+            if (action != null && action.equals("Delete")) {
+                Long recordId = Long.parseLong(request.getParameter("recordid"));
+                PreparedStatement delR = cn.prepareStatement("delete from records where id=?");
+                delR.setLong(1, recordId);
+                delR.execute();
+                delR.close();
+            }
+
+            // Assume Zone will be fixed
+            PreparedStatement delDM = cn.prepareStatement("delete from domainmetadata where domain_id=? and kind='broken'");
+            delDM.setLong(1, domainId);
+            delDM.execute();
+            delDM.close();
+
             PreparedStatement stDomain = cn.prepareStatement("select d.name "
                     + "from domains d "
                     + "where d.id=?");
-            stDomain.setInt(1, domainId);
+            stDomain.setLong(1, domainId);
             ResultSet rsD = stDomain.executeQuery();
             rsD.first();
             String domainname = rsD.getString(1);
@@ -85,7 +99,7 @@ public class ListZone extends HttpServlet {
 
             out.println("<h1>Zone with potentially invalid records</h1>");
 
-            out.println("<table border=\"1\" cellspacing=\"1\" cellpadding=\"1\" class=\"sortable\">"
+            out.println("<table border=\"1\" cellspacing=\"1\" cellpadding=\"1\">"
                     + "<thead>"
                     + "<tr bgcolor=\"#CCCCCC\">"
                     + "<th>name</th>"
@@ -103,7 +117,7 @@ public class ListZone extends HttpServlet {
                     + "where r.domain_id=? "
                     + "limit 100");
 
-            stZone.setInt(1, domainId);
+            stZone.setLong(1, domainId);
             ResultSet rsZ = stZone.executeQuery();
 
             while (rsZ.next()) {
@@ -119,7 +133,14 @@ public class ListZone extends HttpServlet {
                         hasNS = "YES";
                     }
                 }
+                String deleteButton = "";
+                if (r.getRc() != 0) {
+                    deleteButton = String.format("<form name=\"deleteRecord\" method=\"post\">"
+                            + "<input type=\"hidden\" name=\"recordid\" value=\"%d\">"
+                            + "<input type=\"submit\" name=\"actionDeleteRecord\" value=\"Delete\">"
+                            + "</form>", rsZ.getLong(1));
 
+                }
                 out.printf("<tr>"
                         + "<td>%s</td>"
                         + "<td>%d</td>"
@@ -128,7 +149,7 @@ public class ListZone extends HttpServlet {
                         + "<td>%s</td>"
                         + "<td>%s</td>"
                         + "</tr>\n",
-                        r.getName(), r.getTtl(), r.getType(), r.getContent(), r.getRcMessage(), ""
+                        r.getName(), r.getTtl(), r.getType(), r.getContent(), r.getRcMessage(), deleteButton
                 );
             }
             out.println("</tbody>"
