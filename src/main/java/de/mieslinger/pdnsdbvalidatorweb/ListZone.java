@@ -67,6 +67,17 @@ public class ListZone extends HttpServlet {
                 delR.close();
             }
 
+            String update = request.getParameter("actionUpdateRecord");
+            if (update != null && update.equals("Update")) {
+                Long recordId = Long.parseLong(request.getParameter("recordid"));
+                String content = request.getParameter("content");
+                PreparedStatement updR = cn.prepareStatement("update records set content=? where id=?");
+                updR.setString(1, content);
+                updR.setLong(2, recordId);
+                updR.execute();
+                updR.close();
+            }
+
             // Assume Zone will be fixed
             PreparedStatement delDM = cn.prepareStatement("delete from domainmetadata where domain_id=? and kind='broken'");
             delDM.setLong(1, domainId);
@@ -133,24 +144,41 @@ public class ListZone extends HttpServlet {
                         hasNS = "YES";
                     }
                 }
-                String deleteButton = "";
+
                 if (r.getRc() != 0) {
-                    deleteButton = String.format("<form name=\"deleteRecord\" method=\"post\">"
+                    String deleteButton = String.format("<form name=\"deleteRecord\" method=\"post\">"
                             + "<input type=\"hidden\" name=\"recordid\" value=\"%d\">"
                             + "<input type=\"submit\" name=\"actionDeleteRecord\" value=\"Delete\">"
                             + "</form>", rsZ.getLong(1));
 
+                    String editButton = String.format("<form name=\"updateRecord\" method=\"post\">"
+                            + "<input type=\"hidden\" name=\"recordid\" value=\"%d\">"
+                            + "<textarea name=\"content\" cols=\"80\" rows=\"5\">%s</textarea>"
+                            + "<input type=\"submit\" name=\"actionUpdateRecord\" value=\"Update\">"
+                            + "</form>", rsZ.getLong(1), r.getContent());
+
+                    out.printf("<tr>"
+                            + "<td>%s</td>"
+                            + "<td>%d</td>"
+                            + "<td>%s</td>"
+                            + "<td>%s</td>"
+                            + "<td>%s</td>"
+                            + "<td>%s</td>"
+                            + "</tr>\n",
+                            r.getName(), r.getTtl(), r.getType(), editButton, r.getRcMessage(), deleteButton
+                    );
+                } else {
+                    out.printf("<tr>"
+                            + "<td>%s</td>"
+                            + "<td>%d</td>"
+                            + "<td>%s</td>"
+                            + "<td>%s</td>"
+                            + "<td>%s</td>"
+                            + "<td>%s</td>"
+                            + "</tr>\n",
+                            r.getName(), r.getTtl(), r.getType(), r.getContent(), r.getRcMessage(), ""
+                    );
                 }
-                out.printf("<tr>"
-                        + "<td>%s</td>"
-                        + "<td>%d</td>"
-                        + "<td>%s</td>"
-                        + "<td>%s</td>"
-                        + "<td>%s</td>"
-                        + "<td>%s</td>"
-                        + "</tr>\n",
-                        r.getName(), r.getTtl(), r.getType(), r.getContent(), r.getRcMessage(), deleteButton
-                );
             }
             out.println("</tbody>"
                     + "</table>");
