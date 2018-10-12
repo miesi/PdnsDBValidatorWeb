@@ -42,6 +42,9 @@ public class ListZone extends HttpServlet {
 
         try {
             long startTs = System.currentTimeMillis();
+            String hasSOA = "NO";
+            String hasNS = "NO";
+            String sOANameMatchesDomainName = "NO";
 
             response.setContentType("text/html;charset=UTF-8");
 
@@ -80,7 +83,7 @@ public class ListZone extends HttpServlet {
             out.println("</head>");
             out.println("<body>");
 
-            out.println("<h1>Zones with potentially invalid records</h1>");
+            out.println("<h1>Zone with potentially invalid records</h1>");
 
             out.println("<table border=\"1\" cellspacing=\"1\" cellpadding=\"1\" class=\"sortable\">"
                     + "<thead>"
@@ -106,6 +109,17 @@ public class ListZone extends HttpServlet {
             while (rsZ.next()) {
                 ResourceRecord r = new ResourceRecord(rsZ.getString(2), rsZ.getLong(3), rsZ.getString(4), rsZ.getInt(5), rsZ.getString(6));
 
+                if (hasSOA.equals("NO")) {
+                    if (r.isSOA) {
+                        hasSOA = "YES";
+                    }
+                }
+                if (hasNS.equals("NO")) {
+                    if (r.isNS) {
+                        hasNS = "YES";
+                    }
+                }
+
                 out.printf("<tr>"
                         + "<td>%s</td>"
                         + "<td>%d</td>"
@@ -119,6 +133,11 @@ public class ListZone extends HttpServlet {
             }
             out.println("</tbody>"
                     + "</table>");
+            out.println("<hr>");
+            out.println("<h1>Zonelevel check</h1>");
+
+            out.println("<p>Zone has SOA Record: " + hasSOA + "</p>");
+            out.println("<p>Zone has NS Record: " + hasNS + "</p>");
             out.println("<hr>");
 
             out.println("Session und Connection Information:<br>");

@@ -30,6 +30,8 @@ public class ResourceRecord {
     String type = null;
     Integer prio = null;
     String content = null;
+    boolean isSOA = false;
+    boolean isNS = false;
 
     private ResourceRecord() {
     }
@@ -49,6 +51,7 @@ public class ResourceRecord {
                     r = new NSRecord(ns, DClass.IN, ttl, nsn);
                     message = "OK";
                     rc = 0;
+                    isNS = true;
                     break;
                 case "CNAME":
                     Name cn = new Name(name + ".");
@@ -84,6 +87,7 @@ public class ResourceRecord {
                     r = new SOARecord(soan, DClass.IN, ttl, pri, mail, serial, refresh, retry, expire, minimum);
                     message = "OK";
                     rc = 0;
+                    isSOA = true;
                     break;
                 case "A":
                     Name an = new Name(name + ".");
@@ -150,6 +154,14 @@ public class ResourceRecord {
 
     public String getContent() {
         return content;
+    }
+
+    public boolean isIsSOA() {
+        return isSOA;
+    }
+
+    public boolean isIsNS() {
+        return isNS;
     }
 
 }
