@@ -107,7 +107,10 @@ public class ListZones extends HttpServlet {
                 stZones.close();
             } catch (SQLException e) {
             }
-
+            try {
+                cn.close();
+            } catch (SQLException e) {
+            }
         } catch (Exception e) {
             out.println(e.toString());
         } finally {
