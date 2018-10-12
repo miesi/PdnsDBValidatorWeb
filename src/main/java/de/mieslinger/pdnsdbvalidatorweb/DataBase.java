@@ -73,4 +73,25 @@ public class DataBase implements ServletContextListener {
     public void contextDestroyed(ServletContextEvent event) {
         // Do your thing during webapp's shutdown.
     }
+
+    public static String getJdbcUrl() {
+        return jdbcUrl;
+    }
+
+    public static String getDbUser() {
+        return dbUser;
+    }
+
+    public static String getDbPass() {
+        return dbPass;
+    }
+
+    public static String getJdbcClass() {
+        return jdbcClass;
+    }
+
+    public static HikariDataSource getDs() {
+        return ds;
+    }
+    
 }
