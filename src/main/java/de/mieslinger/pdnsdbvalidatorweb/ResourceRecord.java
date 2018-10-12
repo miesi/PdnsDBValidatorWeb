@@ -77,8 +77,8 @@ public class ResourceRecord {
                 case "SOA":
                     Name soan = new Name(name + ".");
                     String[] soaFields = content.split(" ");
-                    Name pri = new Name(soaFields[0]);
-                    Name mail = new Name(soaFields[1]);
+                    Name pri = new Name(soaFields[0] + ".");
+                    Name mail = new Name(soaFields[1] + ".");
                     Long serial = Long.parseLong(soaFields[2]);
                     Long refresh = Long.parseLong(soaFields[3]);
                     Long retry = Long.parseLong(soaFields[4]);
@@ -109,7 +109,7 @@ public class ResourceRecord {
                     Integer srvprio = Integer.parseInt(srvFields[0]);
                     Integer weight = Integer.parseInt(srvFields[1]);
                     Integer port = Integer.parseInt(srvFields[2]);
-                    Name host = new Name(srvFields[3]);
+                    Name host = new Name(srvFields[3] + ".");
                     r = new SRVRecord(srvn, DClass.IN, ttl, srvprio, weight, port, host);
                     message = "OK";
                     rc = 0;
