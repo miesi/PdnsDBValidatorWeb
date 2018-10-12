@@ -84,6 +84,16 @@ public class ListZone extends HttpServlet {
             delDM.execute();
             delDM.close();
 
+            PreparedStatement stNextDomain = cn.prepareStatement("select domain_id "
+                    + "from domainmetadata "
+                    + "where domain_id != ? "
+                    + "limit 1");
+            stNextDomain.setLong(1, domainId);
+            ResultSet rsDN = stNextDomain.executeQuery();
+            rsDN.first();
+            Long nextDomId = rsDN.getLong(1);
+            rsDN.close();
+
             PreparedStatement stDomain = cn.prepareStatement("select d.name "
                     + "from domains d "
                     + "where d.id=?");
@@ -109,6 +119,8 @@ public class ListZone extends HttpServlet {
             out.println("<body>");
 
             out.println("<h1>Zone with potentially invalid records</h1>");
+
+            out.printf("<p><a href=\"ListZone?domainid=%d\">Go to next Zone</a></p>", nextDomId);
 
             out.println("<table border=\"1\" cellspacing=\"1\" cellpadding=\"1\">"
                     + "<thead>"
