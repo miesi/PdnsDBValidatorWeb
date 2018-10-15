@@ -94,13 +94,14 @@ public class ListZone extends HttpServlet {
             Long nextDomId = rsDN.getLong(1);
             rsDN.close();
 
-            PreparedStatement stDomain = cn.prepareStatement("select d.name "
+            PreparedStatement stDomain = cn.prepareStatement("select d.name, d.type "
                     + "from domains d "
                     + "where d.id=?");
             stDomain.setLong(1, domainId);
             ResultSet rsD = stDomain.executeQuery();
             rsD.first();
-            String domainname = rsD.getString(1);
+            String domainName = rsD.getString(1);
+            String domainType = rsD.getString(2);
 
             try {
                 rsD.close();
@@ -113,7 +114,7 @@ public class ListZone extends HttpServlet {
 
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Zone " + domainname);
+            out.println("<title>Zone " + domainName);
             out.println("</title>");
             out.println("</head>");
             out.println("<body>");
@@ -122,6 +123,10 @@ public class ListZone extends HttpServlet {
 
             out.printf("<p><a href=\"ListZone?domainid=%d\">Go to next Zone</a></p>", nextDomId);
 
+            out.println("<h2>domains table content</h2>");
+            out.println("domainId: " + domainId + "<br>domainName: " + domainName + "<br>domainType: " + domainType);
+
+            out.println("<h2>records table content</h2>");
             out.println("<table border=\"1\" cellspacing=\"1\" cellpadding=\"1\">"
                     + "<thead>"
                     + "<tr bgcolor=\"#CCCCCC\">"
@@ -149,6 +154,9 @@ public class ListZone extends HttpServlet {
                 if (hasSOA.equals("NO")) {
                     if (r.isSOA) {
                         hasSOA = "YES";
+                        if (r.getName().equals(domainName)) {
+                            sOANameMatchesDomainName = "YES";
+                        }
                     }
                 }
                 if (hasNS.equals("NO")) {
@@ -198,7 +206,10 @@ public class ListZone extends HttpServlet {
             out.println("<h1>Zonelevel check</h1>");
 
             out.println("<p>Zone has SOA Record: " + hasSOA + "</p>");
+            out.println("<p>Name of SOA Record matches domains table: " + sOANameMatchesDomainName + "</p>");
+
             out.println("<p>Zone has NS Record: " + hasNS + "</p>");
+
             out.println("<hr>");
 
             out.println("Session und Connection Information:<br>");
