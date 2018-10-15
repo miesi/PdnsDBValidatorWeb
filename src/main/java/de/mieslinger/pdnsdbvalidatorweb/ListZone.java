@@ -186,8 +186,7 @@ public class ListZone extends HttpServlet {
             // FIXME: handle long zone clever
             PreparedStatement stZone = cn.prepareStatement("select r.id, r.name, r.ttl, r.type, r.prio, r.content "
                     + "from records r "
-                    + "where r.domain_id=? "
-                    + "limit 100");
+                    + "where r.domain_id=? ");
 
             stZone.setLong(1, domainId);
             ResultSet rsZ = stZone.executeQuery();
