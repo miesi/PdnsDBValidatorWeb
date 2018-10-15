@@ -65,6 +65,7 @@ public class ListZone extends HttpServlet {
             delDM.execute();
             delDM.close();
 
+            // Get next domainId for link to next zone to be fixed
             PreparedStatement stNextDomain = cn.prepareStatement("select domain_id "
                     + "from domainmetadata "
                     + "where domain_id != ? "
@@ -75,6 +76,8 @@ public class ListZone extends HttpServlet {
             Long nextDomId = rsDN.getLong(1);
             rsDN.close();
 
+            // handle delete zone
+            // overwrite now invalid domainId with a valid domainId
             String actionDeleteZone = request.getParameter("actionDeleteZone");
             if (actionDeleteZone != null && actionDeleteZone.equals("DeleteZone")) {
                 Long dDomainId = Long.parseLong(request.getParameter("domainid"));
@@ -90,6 +93,7 @@ public class ListZone extends HttpServlet {
                 domainId = nextDomId;
             }
 
+            // get data from domains table for domainId
             PreparedStatement stDomain = cn.prepareStatement("select d.name, d.type "
                     + "from domains d "
                     + "where d.id=?");
@@ -108,6 +112,8 @@ public class ListZone extends HttpServlet {
             } catch (SQLException e) {
             }
 
+            // handle generate SOA
+            // use provided NS Name from cgi.
             String actionGenerateSOA = request.getParameter("actionGenerateSOA");
             if (actionGenerateSOA != null && actionGenerateSOA.equals("GenerateSOA")) {
                 Long gDomainId = Long.parseLong(request.getParameter("domainid"));
@@ -124,6 +130,7 @@ public class ListZone extends HttpServlet {
                 insSOA.close();
             }
 
+            // handle delete Record
             String actionDeleteRecord = request.getParameter("actionDeleteRecord");
             if (actionDeleteRecord != null && actionDeleteRecord.equals("Delete")) {
                 Long recordId = Long.parseLong(request.getParameter("recordid"));
@@ -133,6 +140,7 @@ public class ListZone extends HttpServlet {
                 delR.close();
             }
 
+            // handle update record
             String actionUpdateRecord = request.getParameter("actionUpdateRecord");
             if (actionUpdateRecord != null && actionUpdateRecord.equals("Update")) {
                 Long recordId = Long.parseLong(request.getParameter("recordid"));
@@ -144,6 +152,7 @@ public class ListZone extends HttpServlet {
                 updR.close();
             }
 
+            // output the usual html
             out.println("<html>");
             out.println("<head>");
             out.println("<title>Zone " + domainName);
@@ -165,6 +174,7 @@ public class ListZone extends HttpServlet {
                     + "<th>name</th>"
                     + "<th>ttl</th>"
                     + "<th>type</th>"
+                    + "<th>prio</th>"
                     + "<th>content</th>"
                     + "<th>check result</th>"
                     + "<th>actions</th>"
@@ -172,6 +182,8 @@ public class ListZone extends HttpServlet {
                     + "</thead>"
                     + "<tbody>\n");
 
+            // get zone content
+            // FIXME: handle long zone clever
             PreparedStatement stZone = cn.prepareStatement("select r.id, r.name, r.ttl, r.type, r.prio, r.content "
                     + "from records r "
                     + "where r.domain_id=? "
@@ -206,7 +218,7 @@ public class ListZone extends HttpServlet {
 
                     String editButton = String.format("<form name=\"updateRecord\" method=\"post\">"
                             + "<input type=\"hidden\" name=\"recordid\" value=\"%d\">"
-                            + "<textarea name=\"content\" cols=\"80\" rows=\"5\">%s</textarea>"
+                            + "<textarea name=\"content\" cols=\"110\" rows=\"8\">%s</textarea>"
                             + "<input type=\"submit\" name=\"actionUpdateRecord\" value=\"Update\">"
                             + "</form>", rsZ.getLong(1), r.getContent());
 
@@ -214,22 +226,24 @@ public class ListZone extends HttpServlet {
                             + "<td>%s</td>"
                             + "<td>%d</td>"
                             + "<td>%s</td>"
+                            + "<td>%d</td>"
                             + "<td>%s</td>"
                             + "<td>%s</td>"
                             + "<td>%s</td>"
                             + "</tr>\n",
-                            r.getName(), r.getTtl(), r.getType(), editButton, r.getRcMessage(), deleteRecordButton
+                            r.getName(), r.getTtl(), r.getType(), r.getPrio(), editButton, r.getRcMessage(), deleteRecordButton
                     );
                 } else {
                     out.printf("<tr>"
                             + "<td>%s</td>"
                             + "<td>%d</td>"
                             + "<td>%s</td>"
+                            + "<td>%d</td>"
                             + "<td>%s</td>"
                             + "<td>%s</td>"
                             + "<td>%s</td>"
                             + "</tr>\n",
-                            r.getName(), r.getTtl(), r.getType(), r.getContent(), r.getRcMessage(), ""
+                            r.getName(), r.getTtl(), r.getType(), r.getPrio(), r.getContent(), r.getRcMessage(), ""
                     );
                 }
             }

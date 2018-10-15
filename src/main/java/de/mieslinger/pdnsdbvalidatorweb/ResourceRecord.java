@@ -4,6 +4,10 @@ $Id: $
 package de.mieslinger.pdnsdbvalidatorweb;
 
 import java.net.InetAddress;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.xbill.DNS.AAAARecord;
 import org.xbill.DNS.ARecord;
 import org.xbill.DNS.CNAMERecord;
@@ -14,7 +18,9 @@ import org.xbill.DNS.Name;
 import org.xbill.DNS.PTRRecord;
 import org.xbill.DNS.Record;
 import org.xbill.DNS.SOARecord;
+import org.xbill.DNS.SPFRecord;
 import org.xbill.DNS.SRVRecord;
+import org.xbill.DNS.TXTRecord;
 
 /**
  *
@@ -106,15 +112,46 @@ public class ResourceRecord {
                 case "SRV":
                     Name srvn = new Name(name + ".");
                     String[] srvFields = content.split(" ");
-                    Integer srvprio = Integer.parseInt(srvFields[0]);
-                    Integer weight = Integer.parseInt(srvFields[1]);
-                    Integer port = Integer.parseInt(srvFields[2]);
-                    Name host = new Name(srvFields[3] + ".");
-                    r = new SRVRecord(srvn, DClass.IN, ttl, srvprio, weight, port, host);
+                    //Integer srvprio = Integer.parseInt(srvFields[0]);
+                    Integer weight = Integer.parseInt(srvFields[0]);
+                    Integer port = Integer.parseInt(srvFields[1]);
+                    Name host = new Name(srvFields[2] + ".");
+                    r = new SRVRecord(srvn, DClass.IN, ttl, prio, weight, port, host);
                     message = "OK";
                     rc = 0;
                     break;
+                case "SPF":
+                    Name spfn = new Name(name + ".");
+                    r = new SPFRecord(spfn, DClass.IN, ttl, content);
+                    message = "OK";
+                    rc = 0;
+                    break;
+                case "TXT":
+                    Name txtn = new Name(name + ".");
 
+                    if (content.contains("\"")) {
+                        List<String> txtStrings = new LinkedList<>();
+
+                        Matcher m = Pattern.compile("\"([^\"]*)\"|(\\S+)").matcher(content);
+                        while (m.find()) {
+                            if (m.group(1) != null) {
+                                txtStrings.add(m.group(1));
+                            } else {
+                                txtStrings.add(m.group(2));
+                            }
+                            r = new TXTRecord(txtn, DClass.IN, ttl, txtStrings);
+                        }
+                    } else {
+                        if (content.length() > 256) {
+                            // TODO: implement autochopping
+                        } else {
+                            r = new TXTRecord(txtn, DClass.IN, ttl, content);
+                        }
+                    }
+
+                    message = "OK";
+                    rc = 0;
+                    break;
                 default:
                     message = "Record type not supported";
                     break;
