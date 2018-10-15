@@ -10,6 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.xbill.DNS.AAAARecord;
 import org.xbill.DNS.ARecord;
+import org.xbill.DNS.CAARecord;
 import org.xbill.DNS.CNAMERecord;
 import org.xbill.DNS.DClass;
 import org.xbill.DNS.MXRecord;
@@ -149,6 +150,14 @@ public class ResourceRecord {
                         }
                     }
 
+                    message = "OK";
+                    rc = 0;
+                    break;
+                case "CAA":
+                    Name caan = new Name(name + ".");
+                    String[] caaFields = content.split(" ");
+                    Integer flags = Integer.parseInt(caaFields[0]);
+                    r = new CAARecord(caan, DClass.IN, ttl, flags, caaFields[1], caaFields[2]);
                     message = "OK";
                     rc = 0;
                     break;
