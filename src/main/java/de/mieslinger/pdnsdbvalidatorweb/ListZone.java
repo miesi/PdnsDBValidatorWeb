@@ -58,26 +58,6 @@ public class ListZone extends HttpServlet {
             HikariDataSource ds = DataBase.getDs();
             Connection cn = ds.getConnection();
 
-            String action = request.getParameter("actionDeleteRecord");
-            if (action != null && action.equals("Delete")) {
-                Long recordId = Long.parseLong(request.getParameter("recordid"));
-                PreparedStatement delR = cn.prepareStatement("delete from records where id=?");
-                delR.setLong(1, recordId);
-                delR.execute();
-                delR.close();
-            }
-
-            String update = request.getParameter("actionUpdateRecord");
-            if (update != null && update.equals("Update")) {
-                Long recordId = Long.parseLong(request.getParameter("recordid"));
-                String content = request.getParameter("content");
-                PreparedStatement updR = cn.prepareStatement("update records set content=? where id=?");
-                updR.setString(1, content);
-                updR.setLong(2, recordId);
-                updR.execute();
-                updR.close();
-            }
-
             // Assume Zone will be fixed
             PreparedStatement delDM = cn.prepareStatement("delete from domainmetadata where domain_id=? and kind='broken'");
             delDM.setLong(1, domainId);
@@ -93,6 +73,40 @@ public class ListZone extends HttpServlet {
             rsDN.first();
             Long nextDomId = rsDN.getLong(1);
             rsDN.close();
+
+            String actionDeleteZone = request.getParameter("actionDeleteZone");
+            if (actionDeleteZone != null && actionDeleteZone.equals("DeleteZone")) {
+                Long dDomainId = Long.parseLong(request.getParameter("domainid"));
+                PreparedStatement delZ = cn.prepareStatement("delete from records where domain_id=?");
+                delZ.setLong(1, dDomainId);
+                delZ.execute();
+                delZ.close();
+                delZ = cn.prepareStatement("delete from domains where id=?");
+                delZ.setLong(1, dDomainId);
+                delZ.execute();
+                delZ.close();
+                domainId = nextDomId;
+            }
+
+            String actionDeleteRecord = request.getParameter("actionDeleteRecord");
+            if (actionDeleteRecord != null && actionDeleteRecord.equals("Delete")) {
+                Long recordId = Long.parseLong(request.getParameter("recordid"));
+                PreparedStatement delR = cn.prepareStatement("delete from records where id=?");
+                delR.setLong(1, recordId);
+                delR.execute();
+                delR.close();
+            }
+
+            String actionUpdateRecord = request.getParameter("actionUpdateRecord");
+            if (actionUpdateRecord != null && actionUpdateRecord.equals("Update")) {
+                Long recordId = Long.parseLong(request.getParameter("recordid"));
+                String content = request.getParameter("content");
+                PreparedStatement updR = cn.prepareStatement("update records set content=? where id=?");
+                updR.setString(1, content);
+                updR.setLong(2, recordId);
+                updR.execute();
+                updR.close();
+            }
 
             PreparedStatement stDomain = cn.prepareStatement("select d.name, d.type "
                     + "from domains d "
@@ -166,7 +180,7 @@ public class ListZone extends HttpServlet {
                 }
 
                 if (r.getRc() != 0) {
-                    String deleteButton = String.format("<form name=\"deleteRecord\" method=\"post\">"
+                    String deleteRecordButton = String.format("<form name=\"deleteRecord\" method=\"post\">"
                             + "<input type=\"hidden\" name=\"recordid\" value=\"%d\">"
                             + "<input type=\"submit\" name=\"actionDeleteRecord\" value=\"Delete\">"
                             + "</form>", rsZ.getLong(1));
@@ -185,7 +199,7 @@ public class ListZone extends HttpServlet {
                             + "<td>%s</td>"
                             + "<td>%s</td>"
                             + "</tr>\n",
-                            r.getName(), r.getTtl(), r.getType(), editButton, r.getRcMessage(), deleteButton
+                            r.getName(), r.getTtl(), r.getType(), editButton, r.getRcMessage(), deleteRecordButton
                     );
                 } else {
                     out.printf("<tr>"
@@ -202,6 +216,12 @@ public class ListZone extends HttpServlet {
             }
             out.println("</tbody>"
                     + "</table>");
+
+            out.printf("<form name=\"deleteZone\" method=\"post\">"
+                    + "<input type=\"hidden\" name=\"domainid\" value=\"%d\">"
+                    + "<input type=\"submit\" name=\"actionDeleteZone\" value=\"DeleteZone\">"
+                    + "</form>", domainId);
+
             out.println("<hr>");
             out.println("<h1>Zonelevel check</h1>");
 
