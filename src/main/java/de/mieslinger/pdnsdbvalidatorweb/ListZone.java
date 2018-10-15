@@ -45,6 +45,7 @@ public class ListZone extends HttpServlet {
             String hasSOA = "NO";
             String hasNS = "NO";
             String sOANameMatchesDomainName = "NO";
+            String dnsName = "";
 
             response.setContentType("text/html;charset=UTF-8");
 
@@ -85,7 +86,42 @@ public class ListZone extends HttpServlet {
                 delZ.setLong(1, dDomainId);
                 delZ.execute();
                 delZ.close();
+                // switch to next domain
                 domainId = nextDomId;
+            }
+
+            PreparedStatement stDomain = cn.prepareStatement("select d.name, d.type "
+                    + "from domains d "
+                    + "where d.id=?");
+            stDomain.setLong(1, domainId);
+            ResultSet rsD = stDomain.executeQuery();
+            rsD.first();
+            String domainName = rsD.getString(1);
+            String domainType = rsD.getString(2);
+
+            try {
+                rsD.close();
+            } catch (SQLException e) {
+            }
+            try {
+                stDomain.close();
+            } catch (SQLException e) {
+            }
+
+            String actionGenerateSOA = request.getParameter("actionGenerateSOA");
+            if (actionGenerateSOA != null && actionGenerateSOA.equals("GenerateSOA")) {
+                Long gDomainId = Long.parseLong(request.getParameter("domainid"));
+                String gDnsName = request.getParameter("dnsname");
+
+                PreparedStatement insSOA = cn.prepareStatement("insert into records(domain_id, name, type, content, ttl) "
+                        + "values (?, ?, 'SOA', ?, 86400)");
+
+                insSOA.setLong(1, gDomainId);
+                insSOA.setString(2, domainName);
+                insSOA.setString(3, String.format("%s %s 1 28800 7200 604800 600", gDnsName, DataBase.getDefaultSoaMail()));
+
+                insSOA.execute();
+                insSOA.close();
             }
 
             String actionDeleteRecord = request.getParameter("actionDeleteRecord");
@@ -106,24 +142,6 @@ public class ListZone extends HttpServlet {
                 updR.setLong(2, recordId);
                 updR.execute();
                 updR.close();
-            }
-
-            PreparedStatement stDomain = cn.prepareStatement("select d.name, d.type "
-                    + "from domains d "
-                    + "where d.id=?");
-            stDomain.setLong(1, domainId);
-            ResultSet rsD = stDomain.executeQuery();
-            rsD.first();
-            String domainName = rsD.getString(1);
-            String domainType = rsD.getString(2);
-
-            try {
-                rsD.close();
-            } catch (SQLException e) {
-            }
-            try {
-                stDomain.close();
-            } catch (SQLException e) {
             }
 
             out.println("<html>");
@@ -166,7 +184,7 @@ public class ListZone extends HttpServlet {
                 ResourceRecord r = new ResourceRecord(rsZ.getString(2), rsZ.getLong(3), rsZ.getString(4), rsZ.getInt(5), rsZ.getString(6));
 
                 if (hasSOA.equals("NO")) {
-                    if (r.isSOA) {
+                    if (r.isSOA()) {
                         hasSOA = "YES";
                         if (r.getName().equals(domainName)) {
                             sOANameMatchesDomainName = "YES";
@@ -174,8 +192,9 @@ public class ListZone extends HttpServlet {
                     }
                 }
                 if (hasNS.equals("NO")) {
-                    if (r.isNS) {
+                    if (r.isNS()) {
                         hasNS = "YES";
+                        dnsName = r.getContent();
                     }
                 }
 
@@ -221,6 +240,14 @@ public class ListZone extends HttpServlet {
                     + "<input type=\"hidden\" name=\"domainid\" value=\"%d\">"
                     + "<input type=\"submit\" name=\"actionDeleteZone\" value=\"DeleteZone\">"
                     + "</form>", domainId);
+
+            if (hasNS.equals("YES") && hasSOA.equals("NO")) {
+                out.printf("<form name=\"generateSOA\" method=\"post\">"
+                        + "<input type=\"hidden\" name=\"domainid\" value=\"%d\">"
+                        + "<input type=\"hidden\" name=\"dnsname\" value=\"%s\">"
+                        + "<input type=\"submit\" name=\"actionGenerateSOA\" value=\"GenerateSOA\">"
+                        + "</form>", domainId, dnsName);
+            }
 
             out.println("<hr>");
             out.println("<h1>Zonelevel check</h1>");

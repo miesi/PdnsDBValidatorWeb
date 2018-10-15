@@ -23,6 +23,7 @@ public class DataBase implements ServletContextListener {
     private static String dbUser;
     private static String dbPass;
     private static String jdbcClass;
+    private static String defaultSoaMail;
     private static final HikariDataSource ds;
 
     static {
@@ -42,6 +43,7 @@ public class DataBase implements ServletContextListener {
         dbUser = pvwProperties.getProperty("dbUser", "root");
         dbPass = pvwProperties.getProperty("dbPass", "");
         jdbcClass = pvwProperties.getProperty("jdbcClass", "com.mysql.jdbc.Driver");
+        defaultSoaMail = pvwProperties.getProperty("defaultSoaMail", "dnsadmin.exampl.com");
 
         // Setup HikariCP
         HikariConfig config = new HikariConfig();
@@ -90,8 +92,12 @@ public class DataBase implements ServletContextListener {
         return jdbcClass;
     }
 
+    public static String getDefaultSoaMail() {
+        return defaultSoaMail;
+    }
+
     public static HikariDataSource getDs() {
         return ds;
     }
-    
+
 }

@@ -22,16 +22,16 @@ import org.xbill.DNS.SRVRecord;
  */
 public class ResourceRecord {
 
-    int rc = 1;
-    String message = "FAILED";
-    Record r = null;
-    String name = null;
-    Long ttl = null;
-    String type = null;
-    Integer prio = null;
-    String content = null;
-    boolean isSOA = false;
-    boolean isNS = false;
+    private int rc = 1;
+    private String message = "FAILED";
+    private Record r = null;
+    private String name = null;
+    private Long ttl = null;
+    private String type = null;
+    private Integer prio = null;
+    private String content = null;
+    private boolean isSOA = false;
+    private boolean isNS = false;
 
     private ResourceRecord() {
     }
@@ -156,11 +156,11 @@ public class ResourceRecord {
         return content;
     }
 
-    public boolean isIsSOA() {
+    public boolean isSOA() {
         return isSOA;
     }
 
-    public boolean isIsNS() {
+    public boolean isNS() {
         return isNS;
     }
 
