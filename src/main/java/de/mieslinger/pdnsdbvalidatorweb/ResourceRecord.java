@@ -113,7 +113,6 @@ public class ResourceRecord {
                 case "SRV":
                     Name srvn = new Name(name + ".");
                     String[] srvFields = content.split(" ");
-                    //Integer srvprio = Integer.parseInt(srvFields[0]);
                     Integer weight = Integer.parseInt(srvFields[0]);
                     Integer port = Integer.parseInt(srvFields[1]);
                     Name host = new Name(srvFields[2] + ".");
@@ -143,8 +142,24 @@ public class ResourceRecord {
                             r = new TXTRecord(txtn, DClass.IN, ttl, txtStrings);
                         }
                     } else {
-                        if (content.length() > 256) {
-                            // TODO: implement autochopping
+                        if (content.length() > 255) {
+                            List<String> txtStrings = new LinkedList<>();
+                            int len = content.length();
+                            int start = 0;
+                            while (len > 0) {
+                                
+                                String part = null;
+                                if (len > 255) {
+                                    part = content.substring(start, start + 255);
+                                } else {
+                                    part = content.substring(start, start + len);
+                                }
+
+                                txtStrings.add(part);
+                                len = len - 255;
+                                start = start + 255;
+                            }
+                            r = new TXTRecord(txtn, DClass.IN, ttl, txtStrings);
                         } else {
                             r = new TXTRecord(txtn, DClass.IN, ttl, content);
                         }
@@ -166,7 +181,7 @@ public class ResourceRecord {
                     break;
             }
         } catch (Exception e) {
-            message = "FAILED: " + e.toString();
+            message = message + " FAILED: " + e.toString();
         }
     }
 
