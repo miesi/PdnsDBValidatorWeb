@@ -168,6 +168,14 @@ public class ListZone extends HttpServlet {
             }
             out.println("<h2>domains table content</h2>");
             out.println("domainId: " + domainId + "<br>domainName: " + domainName + "<br>domainType: " + domainType);
+            out.println("<h1>Zonelevel check</h1>");
+
+            out.println("<p>Zone has SOA Record: " + hasSOA + "</p>");
+            out.println("<p>Name of SOA Record matches domains table: " + sOANameMatchesDomainName + "</p>");
+
+            out.println("<p>Zone has NS Record: " + hasNS + "</p>");
+
+            out.println("<hr>");
 
             out.println("<h2>records table content</h2>");
             out.println("<table border=\"1\" cellspacing=\"1\" cellpadding=\"1\">"
@@ -263,14 +271,6 @@ public class ListZone extends HttpServlet {
                         + "<input type=\"submit\" name=\"actionGenerateSOA\" value=\"GenerateSOA\">"
                         + "</form>", domainId, dnsName);
             }
-
-            out.println("<hr>");
-            out.println("<h1>Zonelevel check</h1>");
-
-            out.println("<p>Zone has SOA Record: " + hasSOA + "</p>");
-            out.println("<p>Name of SOA Record matches domains table: " + sOANameMatchesDomainName + "</p>");
-
-            out.println("<p>Zone has NS Record: " + hasNS + "</p>");
 
             out.println("<hr>");
 
