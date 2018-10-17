@@ -72,8 +72,10 @@ public class ListZone extends HttpServlet {
                     + "limit 1");
             stNextDomain.setLong(1, domainId);
             ResultSet rsDN = stNextDomain.executeQuery();
-            rsDN.first();
-            Long nextDomId = rsDN.getLong(1);
+            Long nextDomId = null;
+            if (rsDN.first()) {
+                nextDomId = rsDN.getLong(1);
+            }
             rsDN.close();
 
             // handle delete zone
@@ -161,9 +163,9 @@ public class ListZone extends HttpServlet {
             out.println("<body>");
 
             out.println("<h1>Zone with potentially invalid records</h1>");
-
-            out.printf("<p><a href=\"ListZone?domainid=%d\">Go to next Zone</a></p>", nextDomId);
-
+            if (null != nextDomId) {
+                out.printf("<p><a href=\"ListZone?domainid=%d\">Go to next Zone</a></p>", nextDomId);
+            }
             out.println("<h2>domains table content</h2>");
             out.println("domainId: " + domainId + "<br>domainName: " + domainName + "<br>domainType: " + domainType);
 
