@@ -43,7 +43,7 @@ public class DataBase implements ServletContextListener {
         dbUser = pvwProperties.getProperty("dbUser", "root");
         dbPass = pvwProperties.getProperty("dbPass", "");
         jdbcClass = pvwProperties.getProperty("jdbcClass", "com.mysql.jdbc.Driver");
-        defaultSoaMail = pvwProperties.getProperty("defaultSoaMail", "dnsadmin.exampl.com");
+        defaultSoaMail = pvwProperties.getProperty("defaultSoaMail", "dnsadmin.example.com");
 
         // Setup HikariCP
         HikariConfig config = new HikariConfig();
