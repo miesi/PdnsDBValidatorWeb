@@ -114,6 +114,25 @@ public class ListZone extends HttpServlet {
             } catch (SQLException e) {
             }
 
+            // handle generate NS
+            // use provided NS Name from cgi. automatically append .biz, .com, .de, .org
+            String actionGenerateNS = request.getParameter("actionGenerateNS");
+            if (actionGenerateNS != null && actionGenerateNS.equals("GenerateNS")) {
+                Long gDomainId = Long.parseLong(request.getParameter("domainid"));
+                String gNsName = request.getParameter("nsname");
+                PreparedStatement insNS = cn.prepareStatement("insert into records(domain_id, name, type, content, ttl) "
+                        + "values (?, ?, 'NS', ?, 172800)");
+
+                String[] tlds = {"biz", "com", "de", "org"};
+                for (String tld : tlds) {
+                    insNS.setLong(1, gDomainId);
+                    insNS.setString(2, domainName);
+                    insNS.setString(3, String.format("%s.%s", gNsName, tld));
+                    insNS.execute();
+                }
+                insNS.close();
+            }
+
             // handle generate SOA
             // use provided NS Name from cgi.
             String actionGenerateSOA = request.getParameter("actionGenerateSOA");
@@ -262,6 +281,13 @@ public class ListZone extends HttpServlet {
                         + "<input type=\"hidden\" name=\"dnsname\" value=\"%s\">"
                         + "<input type=\"submit\" name=\"actionGenerateSOA\" value=\"GenerateSOA\">"
                         + "</form>", domainId, dnsName);
+            }
+            if (hasNS.equals("NO")) {
+                out.printf("<form name=\"generateNS\" method=\"post\">"
+                        + "<input type=\"hidden\" name=\"domainid\" value=\"%d\">"
+                        + "<input type=\"text\" name=\"nsname\" value=\"%s\">"
+                        + "<input type=\"submit\" name=\"actionGenerateNS\" value=\"GenerateNS\">"
+                        + "</form>", domainId, "ns-de.1and1-dns");
             }
 
             out.println("<hr>");
