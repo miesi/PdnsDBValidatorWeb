@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.Enumeration;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -26,6 +27,8 @@ import javax.servlet.http.HttpSession;
  */
 @WebServlet(name = "ListZone", urlPatterns = {"/ListZone"})
 public class ListZone extends HttpServlet {
+
+    private final boolean debug = true;
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -181,6 +184,10 @@ public class ListZone extends HttpServlet {
             out.println("</head>");
             out.println("<body>");
 
+            if (debug) {
+                out.println(dumpRequestHeaders(request));
+            }
+
             out.println("<h1>Zone with potentially invalid records</h1>");
             if (null != nextDomId) {
                 out.printf("<p><a href=\"ListZone?domainid=%d\">Go to next Zone</a></p>", nextDomId);
@@ -328,6 +335,32 @@ public class ListZone extends HttpServlet {
         } finally {
             out.close();
         }
+    }
+
+    private String dumpRequestHeaders(HttpServletRequest request) {
+        String r = "<table border=\"0\">";
+        if (request.isRequestedSessionIdValid()) {
+            r = r + "<tr><td>Session</td><td>valid</td></tr>";
+        } else {
+            r = r + "<tr><td>Session</td><td>invalid</td></tr>";
+        }
+
+        Enumeration parameters = request.getParameterNames();
+        for (; parameters.hasMoreElements();) {
+            // Get the name of the request parameter
+            String name = (String) parameters.nextElement();
+            r = r + "<tr><td>" + name + "</td>";
+
+            // If the request parameter can appear more than once in the query string, get all values
+            String[] values = request.getParameterValues(name);
+            r = r + "<td>";
+            for (int i = 0; i < values.length; i++) {
+                r = r + values[i] + ";";
+            }
+            r = r + "</td></tr>";
+        }
+        r = r + "</table>";
+        return r;
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
