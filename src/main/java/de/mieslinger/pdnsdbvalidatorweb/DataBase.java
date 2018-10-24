@@ -54,12 +54,12 @@ public class DataBase implements ServletContextListener {
 
         config.setPassword(dbPass);
 
-        config.addDataSourceProperty("cachePrepStmts", "true");
-        config.addDataSourceProperty("prepStmtCacheSize", "250");
-        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        config.addDataSourceProperty("useServerPrepStmts", "true");
-        config.addDataSourceProperty("useUnicode", "yes");
-        config.addDataSourceProperty("characterEncoding", "utf8");
+        //config.addDataSourceProperty("cachePrepStmts", "true");
+        //config.addDataSourceProperty("prepStmtCacheSize", "250");
+        //config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        //config.addDataSourceProperty("useServerPrepStmts", "true");
+        //config.addDataSourceProperty("useUnicode", "yes");
+        //config.addDataSourceProperty("characterEncoding", "utf8");
         config.setDriverClassName(jdbcClass);
 
         ds = new HikariDataSource(config);
