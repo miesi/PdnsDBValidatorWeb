@@ -54,8 +54,14 @@ public class ResourceRecord {
             switch (type) {
                 case "NS":
                     Name ns = new Name(name + ".");
+
+                    // ignore Problems with trailing dots. Newer PDNSes do accept them
+                    if (!content.endsWith(".")) {
+                        content = content + ".";
+                    }
+
                     if (content.contains("ui-dns")) {
-                        Name nsn = new Name(content + ".");
+                        Name nsn = new Name(content);
                         r = new NSRecord(ns, DClass.IN, ttl, nsn);
                     }
                     message = "OK";
@@ -64,21 +70,39 @@ public class ResourceRecord {
                     break;
                 case "CNAME":
                     Name cn = new Name(name + ".");
-                    Name ct = new Name(content + ".");
+
+                    // ignore Problems with trailing dots. Newer PDNSes do accept them
+                    if (!content.endsWith(".")) {
+                        content = content + ".";
+                    }
+
+                    Name ct = new Name(content);
                     r = new CNAMERecord(cn, DClass.IN, ttl, ct);
                     message = "OK";
                     rc = 0;
                     break;
                 case "PTR":
                     Name ptr = new Name(name + ".");
-                    Name ptrdname = new Name(content + ".");
+
+                    // ignore Problems with trailing dots. Newer PDNSes do accept them
+                    if (!content.endsWith(".")) {
+                        content = content + ".";
+                    }
+
+                    Name ptrdname = new Name(content);
                     r = new PTRRecord(ptr, DClass.IN, ttl, ptrdname);
                     message = "OK";
                     rc = 0;
                     break;
                 case "MX":
                     Name mxn = new Name(name + ".");
-                    Name mxt = new Name(content + ".");
+
+                    // ignore Problems with trailing dots. Newer PDNSes do accept them
+                    if (!content.endsWith(".")) {
+                        content = content + ".";
+                    }
+
+                    Name mxt = new Name(content);
                     r = new MXRecord(mxn, DClass.IN, ttl, prio, mxt);
                     message = "OK";
                     rc = 0;
@@ -107,6 +131,7 @@ public class ResourceRecord {
                     break;
                 case "AAAA":
                     Name aaaan = new Name(name + ".");
+
                     // only jdk9+ know about ipv6 mapped ipv4 addresses
                     // exclude Strings starting with 0:0:0:0:0:ffff:
                     if (!content.startsWith("0:0:0:0:0:ffff:")) {
@@ -119,9 +144,16 @@ public class ResourceRecord {
                 case "SRV":
                     Name srvn = new Name(name + ".");
                     String[] srvFields = content.split(" ");
+                    //Integer srvprio = Integer.parseInt(srvFields[0]);
                     Integer weight = Integer.parseInt(srvFields[0]);
                     Integer port = Integer.parseInt(srvFields[1]);
-                    Name host = new Name(srvFields[2] + ".");
+
+                    // ignore Problems with trailing dots. Newer PDNSes do accept them
+                    if (!srvFields[2].endsWith(".")) {
+                        srvFields[2] = srvFields[2] + ".";
+                    }
+
+                    Name host = new Name(srvFields[2]);
                     r = new SRVRecord(srvn, DClass.IN, ttl, prio, weight, port, host);
                     message = "OK";
                     rc = 0;
@@ -187,7 +219,7 @@ public class ResourceRecord {
                     break;
             }
         } catch (Exception e) {
-            message = message + " FAILED: " + e.toString();
+            message = "FAILED: " + e.toString();
         }
     }
 
