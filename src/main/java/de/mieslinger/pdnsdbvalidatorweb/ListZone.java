@@ -57,6 +57,7 @@ public class ListZone extends HttpServlet {
             try {
                 domainId = Long.parseLong(request.getParameter("domainid"));
             } catch (Exception e) {
+                System.out.println("request contained no domainId");
             }
 
             HikariDataSource ds = DataBase.getDs();
@@ -90,10 +91,12 @@ public class ListZone extends HttpServlet {
                 delZ.setLong(1, dDomainId);
                 delZ.execute();
                 delZ.close();
+                System.out.println("deleted domainId " + dDomainId + " from records");
                 delZ = cn.prepareStatement("delete from domains where id=?");
                 delZ.setLong(1, dDomainId);
                 delZ.execute();
                 delZ.close();
+                System.out.println("deleted domainId " + dDomainId + " from domains");
                 // switch to next domain
                 domainId = nextDomId;
             }
@@ -134,6 +137,7 @@ public class ListZone extends HttpServlet {
                     insNS.execute();
                 }
                 insNS.close();
+                System.out.println("inserted NS records for domainId " + gDomainId + " from records");
             }
 
             // handle generate SOA
@@ -152,6 +156,7 @@ public class ListZone extends HttpServlet {
 
                 insSOA.execute();
                 insSOA.close();
+                System.out.println("inserted SOA records for domainId " + gDomainId + " from records");
             }
 
             // handle delete Record
@@ -162,6 +167,7 @@ public class ListZone extends HttpServlet {
                 delR.setLong(1, recordId);
                 delR.execute();
                 delR.close();
+                System.out.println("deleted record id " + recordId);
             }
 
             // handle update record
@@ -174,6 +180,7 @@ public class ListZone extends HttpServlet {
                 updR.setLong(2, recordId);
                 updR.execute();
                 updR.close();
+                System.out.println("updated recordId " + recordId);
             }
 
             // output the usual html
@@ -238,12 +245,12 @@ public class ListZone extends HttpServlet {
                 }
 
                 if (r.getRc() != 0) {
-                    String deleteRecordButton = String.format("<form name=\"deleteRecord\" method=\"post\">"
+                    String deleteRecordButton = String.format("<form name=\"deleteRecord\" method=\"get\">"
                             + "<input type=\"hidden\" name=\"recordid\" value=\"%d\">"
                             + "<input type=\"submit\" name=\"actionDeleteRecord\" value=\"Delete\">"
                             + "</form>", rsZ.getLong(1));
 
-                    String editButton = String.format("<form name=\"updateRecord\" method=\"post\">"
+                    String editButton = String.format("<form name=\"updateRecord\" method=\"get\">"
                             + "<input type=\"hidden\" name=\"recordid\" value=\"%d\">"
                             + "<textarea name=\"content\" cols=\"110\" rows=\"8\">%s</textarea>"
                             + "<input type=\"submit\" name=\"actionUpdateRecord\" value=\"Update\">"
@@ -277,20 +284,20 @@ public class ListZone extends HttpServlet {
             out.println("</tbody>"
                     + "</table>");
 
-            out.printf("<form name=\"deleteZone\" method=\"post\">"
+            out.printf("<form name=\"deleteZone\" method=\"get\">"
                     + "<input type=\"hidden\" name=\"domainid\" value=\"%d\">"
                     + "<input type=\"submit\" name=\"actionDeleteZone\" value=\"DeleteZone\">"
                     + "</form>", domainId);
 
             if (hasNS.equals("YES") && hasSOA.equals("NO")) {
-                out.printf("<form name=\"generateSOA\" method=\"post\">"
+                out.printf("<form name=\"generateSOA\" method=\"get\">"
                         + "<input type=\"hidden\" name=\"domainid\" value=\"%d\">"
                         + "<input type=\"hidden\" name=\"dnsname\" value=\"%s\">"
                         + "<input type=\"submit\" name=\"actionGenerateSOA\" value=\"GenerateSOA\">"
                         + "</form>", domainId, dnsName);
             }
             if (hasNS.equals("NO")) {
-                out.printf("<form name=\"generateNS\" method=\"post\">"
+                out.printf("<form name=\"generateNS\" method=\"get\">"
                         + "<input type=\"hidden\" name=\"domainid\" value=\"%d\">"
                         + "<input type=\"text\" name=\"nsname\" value=\"%s\">"
                         + "<input type=\"submit\" name=\"actionGenerateNS\" value=\"GenerateNS\">"
@@ -339,11 +346,6 @@ public class ListZone extends HttpServlet {
 
     private String dumpRequestHeaders(HttpServletRequest request) {
         String r = "<table border=\"0\">";
-        if (request.isRequestedSessionIdValid()) {
-            r = r + "<tr><td>Session</td><td>valid</td></tr>";
-        } else {
-            r = r + "<tr><td>Session</td><td>invalid</td></tr>";
-        }
 
         Enumeration parameters = request.getParameterNames();
         for (; parameters.hasMoreElements();) {
