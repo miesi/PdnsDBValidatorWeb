@@ -13,7 +13,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
-import java.util.Enumeration;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -27,8 +26,6 @@ import javax.servlet.http.HttpSession;
  */
 @WebServlet(name = "ListZone", urlPatterns = {"/ListZone"})
 public class ListZone extends HttpServlet {
-
-    private final boolean debug = true;
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -57,11 +54,14 @@ public class ListZone extends HttpServlet {
             try {
                 domainId = Long.parseLong(request.getParameter("domainid"));
             } catch (Exception e) {
-                System.out.println("request contained no domainId");
+                out.println("request contained no domainId");
             }
 
             HikariDataSource ds = DataBase.getDs();
             Connection cn = ds.getConnection();
+
+            // Get and save reason
+            String reason = getReason(cn, domainId);
 
             // Assume Zone will be fixed
             PreparedStatement delDM = cn.prepareStatement("delete from domainmetadata where domain_id=? and kind='broken'");
@@ -81,6 +81,7 @@ public class ListZone extends HttpServlet {
                 nextDomId = rsDN.getLong(1);
             }
             rsDN.close();
+            stNextDomain.close();
 
             // handle delete zone
             // overwrite now invalid domainId with a valid domainId
@@ -99,6 +100,8 @@ public class ListZone extends HttpServlet {
                 System.out.println("deleted domainId " + dDomainId + " from domains");
                 // switch to next domain
                 domainId = nextDomId;
+                // on changed domainId, reason needs to be reloaded
+                reason = getReason(cn, domainId);
             }
 
             // get data from domains table for domainId
@@ -191,11 +194,7 @@ public class ListZone extends HttpServlet {
             out.println("</head>");
             out.println("<body>");
 
-            if (debug) {
-                out.println(dumpRequestHeaders(request));
-            }
-
-            out.println("<h1>Zone with potentially invalid records</h1>");
+            out.println("<h1>Zone with potentially invalid records</h1>" + reason);
             if (null != nextDomId) {
                 out.printf("<p><a href=\"ListZone?domainid=%d\">Go to next Zone</a></p>", nextDomId);
             }
@@ -246,15 +245,17 @@ public class ListZone extends HttpServlet {
 
                 if (r.getRc() != 0) {
                     String deleteRecordButton = String.format("<form name=\"deleteRecord\" method=\"get\">"
+                            + "<input type=\"hidden\" name=\"domainid\" value=\"%d\">"
                             + "<input type=\"hidden\" name=\"recordid\" value=\"%d\">"
                             + "<input type=\"submit\" name=\"actionDeleteRecord\" value=\"Delete\">"
-                            + "</form>", rsZ.getLong(1));
+                            + "</form>", domainId, rsZ.getLong(1));
 
                     String editButton = String.format("<form name=\"updateRecord\" method=\"get\">"
+                            + "<input type=\"hidden\" name=\"domainid\" value=\"%d\">"
                             + "<input type=\"hidden\" name=\"recordid\" value=\"%d\">"
                             + "<textarea name=\"content\" cols=\"110\" rows=\"8\">%s</textarea>"
                             + "<input type=\"submit\" name=\"actionUpdateRecord\" value=\"Update\">"
-                            + "</form>", rsZ.getLong(1), r.getContent());
+                            + "</form>", domainId, rsZ.getLong(1), r.getContent());
 
                     out.printf("<tr>"
                             + "<td>%s</td>"
@@ -344,25 +345,24 @@ public class ListZone extends HttpServlet {
         }
     }
 
-    private String dumpRequestHeaders(HttpServletRequest request) {
-        String r = "<table border=\"0\">";
-
-        Enumeration parameters = request.getParameterNames();
-        for (; parameters.hasMoreElements();) {
-            // Get the name of the request parameter
-            String name = (String) parameters.nextElement();
-            r = r + "<tr><td>" + name + "</td>";
-
-            // If the request parameter can appear more than once in the query string, get all values
-            String[] values = request.getParameterValues(name);
-            r = r + "<td>";
-            for (int i = 0; i < values.length; i++) {
-                r = r + values[i] + ";";
+    private String getReason(Connection cn, Long domainId) {
+        String reason = "";
+        try {
+            PreparedStatement stReason = cn.prepareStatement("select content "
+                    + "from domainmetadata "
+                    + "where domain_id = ? "
+                    + "  and kind = 'broken'");
+            stReason.setLong(1, domainId);
+            ResultSet rsReason = stReason.executeQuery();
+            if (rsReason.first()) {
+                reason = rsReason.getString(1);
             }
-            r = r + "</td></tr>";
+            rsReason.close();
+            stReason.close();
+        } catch (Exception e) {
+            return "unhandled exception";
         }
-        r = r + "</table>";
-        return r;
+        return reason;
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
