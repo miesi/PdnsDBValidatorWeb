@@ -191,12 +191,27 @@ public class ListZone extends HttpServlet {
             out.println("<head>");
             out.println("<title>Zone " + domainName);
             out.println("</title>");
-            out.println("</head>");
-            out.println("<body>");
+            out.println("<script type=\"text/javascript\">\n"
+                    + "function HotKeys () {\n"
+                    + "document.body.addEventListener('keydown', function(e) {\n"
+                    + "	if(e.keyCode == 68) {document.forms.deleteZone.elements.actionDeleteZone.click();}\n"
+                    + "	if(e.keyCode == 78) {document.links.next.click();}\n"
+                    + "	if(e.keyCode == 71) {document.forms.generateNS.elements.actionGenerateNS.click();}\n"
+                    + "	if(e.keyCode == 83) {document.forms.generateSOA.elements.actionGenerateSOA.click();}\n"
+                    + "});"
+                    + "}"
+            );
 
-            out.println("<h1>Zone with potentially invalid records</h1>" + reason);
+            out.println("</script>");
+
+            out.println("</head>");
+            out.println("<body onload=\"HotKeys()\">");
+
+            out.println("<h1>Zone with potentially invalid records</h1>");
+            out.println("HotKeys:<br><b>d</b>: delete zone <b>n</b>: next zone<br><b>g</b>: generate name server <b>s</b>: soa generate<br>");
+            out.println("<b>Reason: " + reason + "</b>");
             if (null != nextDomId) {
-                out.printf("<p><a href=\"ListZone?domainid=%d\">Go to next Zone</a></p>", nextDomId);
+                out.printf("<p><a name=\"next\" href=\"ListZone?domainid=%d\">Go to next Zone</a></p>", nextDomId);
             }
             out.println("<h2>domains table content</h2>");
             out.println("domainId: " + domainId + "<br>domainName: " + domainName + "<br>domainType: " + domainType);
