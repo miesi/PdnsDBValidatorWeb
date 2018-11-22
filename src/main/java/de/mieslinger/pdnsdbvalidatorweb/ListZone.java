@@ -49,16 +49,26 @@ public class ListZone extends HttpServlet {
 
             response.setContentType("text/html;charset=UTF-8");
 
-            // FIXME: fail gracefully without domainId
+            HikariDataSource ds = DataBase.getDs();
+            Connection cn = ds.getConnection();
+
             Long domainId = null;
             try {
                 domainId = Long.parseLong(request.getParameter("domainid"));
             } catch (Exception e) {
-                out.println("request contained no domainId");
-            }
+                out.println("domainId could not be parsed");
 
-            HikariDataSource ds = DataBase.getDs();
-            Connection cn = ds.getConnection();
+                PreparedStatement selDomainIdByName = cn.prepareStatement("select d.id "
+                        + "from domains d "
+                        + "where d.name = ? ");
+                selDomainIdByName.setString(1, request.getParameter("domainid"));
+                ResultSet rsDBN = selDomainIdByName.executeQuery();
+                if (rsDBN.first()) {
+                    domainId = rsDBN.getLong(1);
+                }
+                rsDBN.close();
+                selDomainIdByName.close();
+            }
 
             // Get and save reason
             String reason = getReason(cn, domainId);
@@ -70,9 +80,11 @@ public class ListZone extends HttpServlet {
             delDM.close();
 
             // Get next domainId for link to next zone to be fixed
-            PreparedStatement stNextDomain = cn.prepareStatement("select domain_id "
-                    + "from domainmetadata "
-                    + "where domain_id != ? "
+            PreparedStatement stNextDomain = cn.prepareStatement("select dm.domain_id "
+                    + "from domainmetadata dm, domains d "
+                    + "where dm.domain_id != ? "
+                    + "  and dm.kind = 'broken' "
+                    + "  and dm.domain_id = d.id "
                     + "limit 1");
             stNextDomain.setLong(1, domainId);
             ResultSet rsDN = stNextDomain.executeQuery();
@@ -82,6 +94,7 @@ public class ListZone extends HttpServlet {
             }
             rsDN.close();
             stNextDomain.close();
+            System.out.println("Using nextDomainId " + nextDomId);
 
             // handle delete zone
             // overwrite now invalid domainId with a valid domainId
@@ -105,6 +118,7 @@ public class ListZone extends HttpServlet {
             }
 
             // get data from domains table for domainId
+            System.out.println("Using domainId " + domainId);
             PreparedStatement stDomain = cn.prepareStatement("select d.name, d.type "
                     + "from domains d "
                     + "where d.id=?");
@@ -117,10 +131,12 @@ public class ListZone extends HttpServlet {
             try {
                 rsD.close();
             } catch (SQLException e) {
+                e.printStackTrace();
             }
             try {
                 stDomain.close();
             } catch (SQLException e) {
+                e.printStackTrace();
             }
 
             // handle generate NS
@@ -235,7 +251,8 @@ public class ListZone extends HttpServlet {
             // FIXME: handle long zone clever
             PreparedStatement stZone = cn.prepareStatement("select r.id, r.name, r.ttl, r.type, r.prio, r.content "
                     + "from records r "
-                    + "where r.domain_id=? ");
+                    + "where r.domain_id=? "
+                    + "limit 10000 ");
 
             stZone.setLong(1, domainId);
             ResultSet rsZ = stZone.executeQuery();
@@ -257,33 +274,32 @@ public class ListZone extends HttpServlet {
                         dnsName = r.getContent();
                     }
                 }
+//if (r.getRc() != 0) {
+                String deleteRecordButton = String.format("<form name=\"deleteRecord\" method=\"get\">"
+                        + "<input type=\"hidden\" name=\"domainid\" value=\"%d\">"
+                        + "<input type=\"hidden\" name=\"recordid\" value=\"%d\">"
+                        + "<input type=\"submit\" name=\"actionDeleteRecord\" value=\"Delete\">"
+                        + "</form>", domainId, rsZ.getLong(1));
 
-                if (r.getRc() != 0) {
-                    String deleteRecordButton = String.format("<form name=\"deleteRecord\" method=\"get\">"
-                            + "<input type=\"hidden\" name=\"domainid\" value=\"%d\">"
-                            + "<input type=\"hidden\" name=\"recordid\" value=\"%d\">"
-                            + "<input type=\"submit\" name=\"actionDeleteRecord\" value=\"Delete\">"
-                            + "</form>", domainId, rsZ.getLong(1));
+                String editButton = String.format("<form name=\"updateRecord\" method=\"get\">"
+                        + "<input type=\"hidden\" name=\"domainid\" value=\"%d\">"
+                        + "<input type=\"hidden\" name=\"recordid\" value=\"%d\">"
+                        + "<textarea name=\"content\" cols=\"50\" rows=\"8\">%s</textarea>"
+                        + "<input type=\"submit\" name=\"actionUpdateRecord\" value=\"Update\">"
+                        + "</form>", domainId, rsZ.getLong(1), r.getContent());
 
-                    String editButton = String.format("<form name=\"updateRecord\" method=\"get\">"
-                            + "<input type=\"hidden\" name=\"domainid\" value=\"%d\">"
-                            + "<input type=\"hidden\" name=\"recordid\" value=\"%d\">"
-                            + "<textarea name=\"content\" cols=\"110\" rows=\"8\">%s</textarea>"
-                            + "<input type=\"submit\" name=\"actionUpdateRecord\" value=\"Update\">"
-                            + "</form>", domainId, rsZ.getLong(1), r.getContent());
-
-                    out.printf("<tr>"
-                            + "<td>%s</td>"
-                            + "<td>%d</td>"
-                            + "<td>%s</td>"
-                            + "<td>%d</td>"
-                            + "<td>%s</td>"
-                            + "<td>%s</td>"
-                            + "<td>%s</td>"
-                            + "</tr>\n",
-                            r.getName(), r.getTtl(), r.getType(), r.getPrio(), editButton, r.getRcMessage(), deleteRecordButton
-                    );
-                } else {
+                out.printf("<tr>"
+                        + "<td>%s</td>"
+                        + "<td>%d</td>"
+                        + "<td>%s</td>"
+                        + "<td>%d</td>"
+                        + "<td>%s</td>"
+                        + "<td>%s</td>"
+                        + "<td>%s</td>"
+                        + "</tr>\n",
+                        r.getName(), r.getTtl(), r.getType(), r.getPrio(), editButton, r.getRcMessage(), deleteRecordButton
+                );
+                /*              } else {
                     out.printf("<tr>"
                             + "<td>%s</td>"
                             + "<td>%d</td>"
@@ -295,7 +311,7 @@ public class ListZone extends HttpServlet {
                             + "</tr>\n",
                             r.getName(), r.getTtl(), r.getType(), r.getPrio(), r.getContent(), r.getRcMessage(), ""
                     );
-                }
+                }*/
             }
             out.println("</tbody>"
                     + "</table>");
@@ -344,17 +360,21 @@ public class ListZone extends HttpServlet {
             try {
                 rsZ.close();
             } catch (SQLException e) {
+                e.printStackTrace();
             }
             try {
                 stZone.close();
             } catch (SQLException e) {
+                e.printStackTrace();
             }
             try {
                 cn.close();
             } catch (SQLException e) {
+                e.printStackTrace();
             }
         } catch (Exception e) {
             out.println(e.toString());
+            e.printStackTrace();
         } finally {
             out.close();
         }

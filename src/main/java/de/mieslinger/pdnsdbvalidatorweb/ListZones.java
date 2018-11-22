@@ -57,7 +57,7 @@ public class ListZones extends HttpServlet {
             PreparedStatement stZones = cn.prepareStatement("select d.id, d.name, dm.content "
                     + "from domainmetadata dm, domains d "
                     + "where d.id=dm.domain_id "
-                    + "  and dm.kind='broken'"
+                    + "  and dm.kind='broken' "
                     + "limit 100");
 
             ResultSet rsZ = stZones.executeQuery();
